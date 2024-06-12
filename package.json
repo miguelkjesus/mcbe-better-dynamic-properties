@@ -1,0 +1,21 @@
+{
+  "name": "@mhesus/mcbe-enhanced-properties",
+  "version": "1.0.4",
+  "description": "A library that improves upon the default dynamic property system.",
+  "author": "Miguel Jesus",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "prepack": "npm ci && npm run build"
+  },
+  "devDependencies": {
+    "@minecraft/server": "^1.12.0-beta.1.21.0-preview.21",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@mhesus/mcbe-colors": "^2.0.0"
+  }
+}

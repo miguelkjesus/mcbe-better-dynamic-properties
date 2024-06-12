@@ -11,7 +11,7 @@
     "prepack": "npm ci && npm run build"
   },
   "devDependencies": {
-    "@minecraft/server": "^1.12.0-beta.1.21.0-preview.21",
+    "@minecraft/server": "^1.13.0-beta.1.21.10-preview.23",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3"
   },

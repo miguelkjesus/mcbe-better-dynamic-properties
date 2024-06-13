@@ -1,7 +1,7 @@
 {
-  "name": "@mhesus/mcbe-enhanced-properties",
-  "version": "1.0.4",
-  "description": "A library that improves upon the default dynamic property system.",
+  "name": "@mhesus/better-dynamic-properties",
+  "version": "0.0.0",
+  "description": "A library that improves upon the default dynamic property.",
   "author": "Miguel Jesus",
   "license": "ISC",
   "main": "dist/index.js",
@@ -14,8 +14,5 @@
     "@minecraft/server": "^1.13.0-beta.1.21.10-preview.23",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "@mhesus/mcbe-colors": "^2.0.0"
   }
 }

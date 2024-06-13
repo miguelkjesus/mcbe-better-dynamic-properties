@@ -1,4 +1,3 @@
-import { world } from "@minecraft/server";
 import { SupportsDynamicProperties } from "./SupportsDynamicProperty";
 import { regex } from "./regex";
 
@@ -9,6 +8,15 @@ export class DynamicProperty {
   static encode: (value: any) => string = JSON.stringify;
   static decode: (value: string) => any = JSON.parse;
 
+  /**
+   * @param owner The owner of the property.
+   * @param id The property identifier.
+   * @returns Returns the value for the property, or undefined if the property has not been set.
+   * @example
+   * ```ts
+   * DynamicProperty.get(world, "example:id");
+   * ```
+   */
   static get<T = any>(owner: SupportsDynamicProperties, id: string): T {
     const propIds = this.getChunkPropertyIds(owner, id);
     if (propIds.length === 0) return undefined;
@@ -21,12 +29,33 @@ export class DynamicProperty {
     return this.decode(value);
   }
 
+  /**
+   * Deletes the dynamic property from the owner.
+   * @param owner The owner of the property.
+   * @param id The property identifier.
+   * @example
+   * ```ts
+   * DynamicProperty.delete(world, "example:goodbye");
+   * ```
+   */
   static delete(owner: SupportsDynamicProperties, id: string) {
     for (const propId of this.getChunkPropertyIds(owner, id)) {
       owner.setDynamicProperty(propId, undefined);
     }
   }
 
+  /**
+   * Sets the value of a dynamic property.
+   * @param owner The owner of the property.
+   * @param id The property identifier.
+   * @param value The value of the property to set. Passing undefined will delete the property.
+   * @example
+   * ```ts
+   * DynamicProperty.set(world, "example:number", 9001);
+   *
+   * DynamicProperty.set(world, "example:object", { a: 1, b: true });
+   * ```
+   */
   static set<T = any>(owner: SupportsDynamicProperties, id: string, value: T) {
     if (value === undefined) this.delete(owner, id);
 
@@ -58,6 +87,16 @@ export class DynamicProperty {
     }
   }
 
+  /**
+   * Adjusts the value of a dynamic property.
+   * @param owner The owner of the property.
+   * @param id The property identifier.
+   * @param adjuster A function that takes the current value and returns a new value.
+   * @example
+   * ```ts
+   * DynamicProperty.adjust(world, "example:increment", (old) => old + 1);
+   * ```
+   */
   static adjust<TOld = any, TNew = any>(
     owner: SupportsDynamicProperties,
     id: string,
@@ -67,6 +106,16 @@ export class DynamicProperty {
     this.set(owner, id, adjuster(old));
   }
 
+  /**
+   * @param owner The owner of the property.
+   * @returns An iterator of the owner's dynamic property ids
+   * @example
+   * ```ts
+   * for (const id of DynamicProperty.ids(owner)) {
+   *  // Do something...
+   * }
+   * ```
+   */
   static *ids(owner: SupportsDynamicProperties): IterableIterator<string> {
     let ids = new Set<string>();
 
@@ -82,10 +131,30 @@ export class DynamicProperty {
     }
   }
 
+  /**
+   * @param owner The owner of the property.
+   * @returns An iterator of the owner's dynamic property ids
+   * @example
+   * ```ts
+   * for (const value of DynamicProperty.values(owner)) {
+   *  // Do something...
+   * }
+   * ```
+   */
   static *values(owner: SupportsDynamicProperties): IterableIterator<string> {
     for (const id of this.ids(owner)) yield this.get(owner, id);
   }
 
+  /**
+   * @param owner The owner of the property.
+   * @returns An iterator of the owner's dynamic property ids
+   * @example
+   * ```ts
+   * for (const [id, value] of DynamicProperty.entries(owner)) {
+   *  // Do something...
+   * }
+   * ```
+   */
   static *entries(
     owner: SupportsDynamicProperties
   ): IterableIterator<[string, any]> {

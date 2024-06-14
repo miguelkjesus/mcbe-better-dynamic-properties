@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 0.2.0
+## Version 0.2.0 (2024/06/14)
 
 Already thought of a few things that I really should've added originally, so here's a quick update.
 
@@ -14,6 +14,6 @@ Already thought of a few things that I really should've added originally, so her
 - Serialized values can now be any valid dynamic property value, not just a string. (affects `.serialized` and `.)
 - .`ids()`, `.values()`, and `.entries()` now take "namespace" as an option.
 
-## Version 0.1.0
+## Version 0.1.0 (2024/06/14)
 
 Package release! :D

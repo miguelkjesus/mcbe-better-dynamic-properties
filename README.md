@@ -48,6 +48,18 @@ DynamicProperty.get(thing, "example:doesnt_exist");
 // >> undefined
 ```
 
+### DynamicProperty.exists()
+
+Checking for existance is also simple.
+
+```ts
+DynamicProperty.exists(world, "example:doesnt_exist");
+// >> false
+
+DynamicProperty.exists(world, "example:does_exist");
+// >> true
+```
+
 ### DynamicProperty.delete()
 
 Deleting properties is now more intuitive, however you can still do it the old way if you like.
@@ -65,9 +77,9 @@ You can also adjust a property all in one method. Just pass in a function that p
 
 ```ts
 DynamicProperty.adjust(thing, "example:number", (old) => old + 1);
-// >> 9002
+// >> 9002 (adjust returns the new value)
 
-// the same as this
+// calling adjust is basically the same as this
 const oldValue = DynamicProperty.get(thing, "example:increment");
 const newValue = old + 1;
 DynamicProperty.set(thing, "example:increment", newValue);
@@ -85,9 +97,16 @@ for (const value of DynamicProperty.values(thing))
 for (const [id, value] of DynamicProperty.entries(thing))
 ```
 
+You can also specify the namespace of the properties to get.
+
+```ts
+for (const id of DynamicProperty.ids(thing, { namespace: "example" }))
+// >> example:id, example:other_id, ...
+```
+
 ### DynamicProperty.serialize() & DynamicProperty.deserialize()
 
-You can override the underlying serializiation/deserialization system if you like.
+Override the underlying serializiation/deserialization system can be done both across the library, or just in a single function.
 
 ```ts
 // global override

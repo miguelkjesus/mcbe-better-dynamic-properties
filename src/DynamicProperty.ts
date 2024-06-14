@@ -126,6 +126,7 @@ export class DynamicProperty {
    * @param owner The owner of the property.
    * @param id The property identifier.
    * @param adjuster A function that takes the current value and returns a new value.
+   * @returns Returns the adjusted value.
    * @example
    * ```ts
    * let newValue = DynamicProperty.adjust(world, "example:increment", (old) => old + 1);

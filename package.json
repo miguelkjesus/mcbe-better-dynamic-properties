@@ -1,6 +1,6 @@
 {
   "name": "@mhesus/better-dynamic-properties",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A library that improves upon the default dynamic property.",
   "author": "Miguel Jesus",
   "license": "ISC",

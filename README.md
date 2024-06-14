@@ -15,7 +15,8 @@ npm i @mhesus/better-dynamic-properties
 - No type restrictions on values (options for custom serialization/deserialization)
 - Unlimited value size
 - `.delete()` method (no more `.set(PROP, undefined)`)
-- `.adjust()` method (get and set in one method)
+- `.exists()` method
+- `.adjust()` method (get and set in one line)
 - Lots of iterators: `.ids()`, `.values()`, `.entries()`
 
 ## Examples

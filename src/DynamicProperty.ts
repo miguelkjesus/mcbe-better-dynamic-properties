@@ -4,14 +4,8 @@ import {
 } from "./SupportsDynamicProperty";
 import { regex } from "./regex";
 
-export type Serializer<
-  TValue = any,
-  TSerialized extends SerializedValue = SerializedValue
-> = (value: TValue, id: string) => TSerialized;
-export type Deserializer<
-  TValue = any,
-  TSerialized extends SerializedValue = SerializedValue
-> = (value: TSerialized, id: string) => TValue;
+export type Serializer<T = any> = (value: T, id: string) => SerializedValue;
+export type Deserializer<T = any> = (value: SerializedValue, id: string) => T;
 
 export type IdGetOptions = { namespace?: string };
 export type GetOptions<T> = { deserialize?: Deserializer<T> };

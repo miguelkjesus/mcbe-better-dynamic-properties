@@ -4,6 +4,11 @@
   "description": "A library that improves upon the default dynamic property.",
   "author": "Miguel Jesus",
   "license": "ISC",
+  "keywords": [
+    "minecraft",
+    "mcbe",
+    "dynamic properties"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

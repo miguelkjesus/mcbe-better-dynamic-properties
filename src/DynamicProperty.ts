@@ -4,6 +4,7 @@ import { regex } from "./regex";
 export type Serializer<T = any> = (value: T, id: string) => string;
 export type Deserializer<T = any> = (value: string, id: string) => T;
 
+export type IdGetOptions = { namespace?: string };
 export type GetOptions<T> = { deserialize?: Deserializer<T> };
 export type SetOptions<T> = { serialize?: Serializer<T> };
 
@@ -20,7 +21,7 @@ export class DynamicProperty {
    * @returns Returns the value for the property, or undefined if the property has not been set.
    * @example
    * ```ts
-   * DynamicProperty.get(world, "example:id");
+   * let value = DynamicProperty.get(world, "example:id");
    * ```
    */
   static get<T = any>(
@@ -41,12 +42,29 @@ export class DynamicProperty {
   }
 
   /**
+   * @param owner The owner of the property.
+   * @param id The property identifier.
+   * @returns Returns whether the dynamic property exists on its owner.
+   * @example
+   * ```ts
+   * DynamicProperty.exists(world, "example:doesnt_exist");
+   * // >> false
+   *
+   * DynamicProperty.exists(world, "example:does_exist");
+   * // >> true
+   * ```
+   */
+  static exists(owner: SupportsDynamicProperties, id: string): boolean {
+    return this._getChunkPropertyIds(owner, id).length !== 0;
+  }
+
+  /**
    * Deletes the dynamic property from the owner.
    * @param owner The owner of the property.
    * @param id The property identifier.
    * @example
    * ```ts
-   * DynamicProperty.delete(world, "example:goodbye");
+   * DynamicProperty.delete(world, "example:id");
    * ```
    */
   static delete(owner: SupportsDynamicProperties, id: string) {
@@ -110,7 +128,7 @@ export class DynamicProperty {
    * @param adjuster A function that takes the current value and returns a new value.
    * @example
    * ```ts
-   * DynamicProperty.adjust(world, "example:increment", (old) => old + 1);
+   * let newValue = DynamicProperty.adjust(world, "example:increment", (old) => old + 1);
    * ```
    */
   static adjust<TOld = any, TNew = any>(
@@ -119,12 +137,15 @@ export class DynamicProperty {
     adjuster: (old: TOld | undefined) => TNew,
     options?: GetOptions<TOld> & SetOptions<TNew>
   ) {
-    const old = this.get(owner, id, options);
-    this.set(owner, id, adjuster(old), options);
+    const oldValue = this.get(owner, id, options);
+    const newValue = adjuster(oldValue);
+    this.set(owner, id, newValue, options);
+    return newValue;
   }
 
   /**
    * @param owner The owner of the property.
+   * @param namespace If included, specifies the namespace of the properties to get (the text before the colon e.g. example_namespace:id)
    * @returns An iterator of the owner's dynamic property ids
    * @example
    * ```ts
@@ -133,7 +154,10 @@ export class DynamicProperty {
    * }
    * ```
    */
-  static *ids(owner: SupportsDynamicProperties): IterableIterator<string> {
+  static *ids(
+    owner: SupportsDynamicProperties,
+    options?: IdGetOptions
+  ): IterableIterator<string> {
     let ids = new Set<string>();
 
     for (const propId of owner.getDynamicPropertyIds()) {
@@ -141,6 +165,11 @@ export class DynamicProperty {
       if (chunkIdPrefixIdx === -1) continue;
 
       const id = propId.slice(0, chunkIdPrefixIdx);
+      if (
+        options?.namespace !== undefined &&
+        !id.startsWith(options?.namespace + ":")
+      )
+        continue;
       if (ids.has(id)) continue;
 
       ids.add(id);
@@ -150,6 +179,7 @@ export class DynamicProperty {
 
   /**
    * @param owner The owner of the property.
+   * @param namespace If included, specifies the namespace of the properties to get (the text before the colon e.g. example_namespace:id)
    * @returns An iterator of the owner's dynamic property ids
    * @example
    * ```ts
@@ -160,13 +190,15 @@ export class DynamicProperty {
    */
   static *values<T>(
     owner: SupportsDynamicProperties,
-    options?: GetOptions<T>
+    options?: IdGetOptions & GetOptions<T>
   ): IterableIterator<T> {
-    for (const id of this.ids(owner)) yield this.get(owner, id, options)!;
+    for (const id of this.ids(owner, options))
+      yield this.get(owner, id, options)!;
   }
 
   /**
    * @param owner The owner of the property.
+   * @param namespace If included, specifies the namespace of the properties to get (the text before the colon e.g. example_namespace:id)
    * @returns An iterator of the owner's dynamic property ids
    * @example
    * ```ts
@@ -177,9 +209,10 @@ export class DynamicProperty {
    */
   static *entries<T>(
     owner: SupportsDynamicProperties,
-    options?: GetOptions<T>
+    options?: IdGetOptions & GetOptions<T>
   ): IterableIterator<[string, T]> {
-    for (const id of this.ids(owner)) yield [id, this.get(owner, id, options)!];
+    for (const id of this.ids(owner, options))
+      yield [id, this.get(owner, id, options)!];
   }
 
   private static _setChunk(

@@ -12,7 +12,7 @@ npm i @mhesus/better-dynamic-properties
 
 ## Features
 
-- No type restrictions on values (options for custom encoding/decoding)
+- No type restrictions on values (options for custom serialization/deserialization)
 - Unlimited value size
 - `.delete()` method (no more `.set(PROP, undefined)`)
 - `.adjust()` method (get and set in one method)
@@ -22,7 +22,7 @@ npm i @mhesus/better-dynamic-properties
 
 ### DynamicProperty.set()
 
-A wide variety of types can be set, since under the hood, everything is encoded into JSON strings.
+A wide variety of types can be set, since under the hood, everything is serialized into JSON strings.
 
 ```ts
 import { DynamicProperty } from "@mhesus/better-dynamic-properties";
@@ -43,6 +43,9 @@ DynamicProperty.get(thing, "example:string");
 
 DynamicProperty.get(thing, "example:object");
 // >> { foo: "bar" }
+
+DynamicProperty.get(thing, "example:doesnt_exist");
+// >> undefined
 ```
 
 ### DynamicProperty.delete()
@@ -61,11 +64,13 @@ DynamicProperty.set(thing, "example:id", undefined);
 You can also adjust a property all in one method. Just pass in a function that performs and returns the modification you want.
 
 ```ts
-DynamicProperty.adjust(thing, "example:increment", (old) => old + 1);
+DynamicProperty.adjust(thing, "example:number", (old) => old + 1);
+// >> 9002
 
 // the same as this
-const old = DynamicProperty.get(thing, "example:increment");
-DynamicProperty.set(thing, "example:increment", old + 1);
+const oldValue = DynamicProperty.get(thing, "example:increment");
+const newValue = old + 1;
+DynamicProperty.set(thing, "example:increment", newValue);
 ```
 
 ### DynamicProperty Iterators
@@ -80,17 +85,9 @@ for (const value of DynamicProperty.values(thing))
 for (const [id, value] of DynamicProperty.entries(thing))
 ```
 
-However, since these are iterators, you cannot use methods like `.forEach` or `.map` like usual. To do this use `Array.from`.
-
-```ts
-Array.from(DynamicProperty.entries(thing)).map(([id, value]) => {
-  // do something...
-});
-```
-
 ### DynamicProperty.serialize() & DynamicProperty.deserialize()
 
-You can override the underlying encoding/decoding system if you like.
+You can override the underlying serializiation/deserialization system if you like.
 
 ```ts
 // global override

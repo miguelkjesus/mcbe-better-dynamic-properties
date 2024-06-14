@@ -2,6 +2,8 @@
 
 A library just like dynamic properties, but a little better.
 
+[npm](https://www.npmjs.com/package/@mhesus/better-dynamic-properties) | [github](https://github.com/miguelkjesus/mcbe-better-dynamic-properties)
+
 If you use a bundler, you can install this via npm:
 
 ```plaintext

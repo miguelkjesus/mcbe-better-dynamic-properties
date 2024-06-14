@@ -1,8 +1,17 @@
-import { SupportsDynamicProperties } from "./SupportsDynamicProperty";
+import {
+  SupportsDynamicProperties,
+  SerializedValue,
+} from "./SupportsDynamicProperty";
 import { regex } from "./regex";
 
-export type Serializer<T = any> = (value: T, id: string) => string;
-export type Deserializer<T = any> = (value: string, id: string) => T;
+export type Serializer<
+  TValue = any,
+  TSerialized extends SerializedValue = SerializedValue
+> = (value: TValue, id: string) => TSerialized;
+export type Deserializer<
+  TValue = any,
+  TSerialized extends SerializedValue = SerializedValue
+> = (value: TSerialized, id: string) => TValue;
 
 export type IdGetOptions = { namespace?: string };
 export type GetOptions<T> = { deserialize?: Deserializer<T> };
@@ -13,7 +22,7 @@ export class DynamicProperty {
   static readonly CHUNK_ID_PREFIX = "_";
 
   static serialize: Serializer = (value) => JSON.stringify(value);
-  static deserialize: Deserializer = (value) => JSON.parse(value);
+  static deserialize: Deserializer = (value) => JSON.parse(value as string);
 
   /**
    * @param owner The owner of the property.

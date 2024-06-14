@@ -1,20 +1,12 @@
 import type { Vector3 } from "@minecraft/server";
 
-export type ValidDynamicPropertyValue =
-  | boolean
-  | number
-  | string
-  | Vector3
-  | undefined;
+export type SerializedValue = boolean | number | string | Vector3 | undefined;
 
 export interface SupportsDynamicProperties {
-  getDynamicProperty(identifier: string): ValidDynamicPropertyValue;
+  getDynamicProperty(identifier: string): SerializedValue;
   getDynamicPropertyIds(): string[];
   getDynamicPropertyTotalByteCount(): number;
-  setDynamicProperty(
-    identifier: string,
-    value?: ValidDynamicPropertyValue
-  ): void;
+  setDynamicProperty(identifier: string, value?: SerializedValue): void;
   clearDynamicProperties(): void;
 }
 

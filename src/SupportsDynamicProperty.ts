@@ -18,19 +18,20 @@ export interface SupportsDynamicProperties {
   clearDynamicProperties(): void;
 }
 
-function hasProperty(x: object, name: string, type: string): boolean {
-  return name in x && typeof x[name] === type;
+function hasFunction(obj: any, name: string): boolean {
+  return typeof obj[name] === "function";
 }
 
 export function supportsDynamicProperties(
-  x: unknown
+  x: any
 ): x is SupportsDynamicProperties {
   return (
     typeof x === "object" &&
-    hasProperty(x, "getDynamicProperty", "function") &&
-    hasProperty(x, "getDynamicPropertyIds", "function") &&
-    hasProperty(x, "getDynamicPropertyTotalByteCount", "function") &&
-    hasProperty(x, "setDynamicProperty", "function") &&
-    hasProperty(x, "clearDynamicProperties", "function")
+    x !== null &&
+    hasFunction(x, "getDynamicProperty") &&
+    hasFunction(x, "getDynamicPropertyIds") &&
+    hasFunction(x, "getDynamicPropertyTotalByteCount") &&
+    hasFunction(x, "setDynamicProperty") &&
+    hasFunction(x, "clearDynamicProperties")
   );
 }

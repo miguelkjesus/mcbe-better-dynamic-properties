@@ -1,6 +1,4 @@
-import type { Vector3 } from "@minecraft/server";
-
-export type SerializedValue = boolean | number | string | Vector3 | undefined;
+import { SerializedValue } from "./SerializedValue";
 
 export interface SupportsDynamicProperties {
   getDynamicProperty(identifier: string): SerializedValue;
@@ -8,10 +6,6 @@ export interface SupportsDynamicProperties {
   getDynamicPropertyTotalByteCount(): number;
   setDynamicProperty(identifier: string, value?: SerializedValue): void;
   clearDynamicProperties(): void;
-}
-
-function hasFunction(obj: any, name: string): boolean {
-  return typeof obj[name] === "function";
 }
 
 export function supportsDynamicProperties(
@@ -26,4 +20,8 @@ export function supportsDynamicProperties(
     hasFunction(x, "setDynamicProperty") &&
     hasFunction(x, "clearDynamicProperties")
   );
+}
+
+function hasFunction(obj: any, name: string): boolean {
+  return typeof obj[name] === "function";
 }

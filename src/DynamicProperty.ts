@@ -1,7 +1,5 @@
-import {
-  SupportsDynamicProperties,
-  SerializedValue,
-} from "./SupportsDynamicProperty";
+import { SerializedValue, isSerializedValue } from "./SerializedValue";
+import { SupportsDynamicProperties } from "./SupportsDynamicProperty";
 import { regex } from "./regex";
 
 export type Serializer<T = any> = (value: T, id: string) => SerializedValue;
@@ -16,7 +14,10 @@ export class DynamicProperty {
   static readonly CHUNK_ID_PREFIX = "_";
 
   static serialize: Serializer = (value) => JSON.stringify(value);
-  static deserialize: Deserializer = (value) => JSON.parse(value as string);
+  static deserialize: Deserializer = (value) => {
+    if (typeof value === "string") return JSON.parse(value);
+    else return value;
+  };
 
   /**
    * @param owner The owner of the property.
@@ -35,10 +36,21 @@ export class DynamicProperty {
     const propIds = this._getChunkPropertyIds(owner, id);
     if (propIds.length === 0) return undefined;
 
-    let value = "";
-    for (const propId of propIds) {
-      const chunk = owner.getDynamicProperty(propId) as string;
-      value += chunk;
+    let value;
+    if (propIds.length === 1) {
+      value = owner.getDynamicProperty(propIds[0]);
+    } else {
+      // collect chunks
+      value = "";
+      for (const propId of propIds) {
+        const chunk = owner.getDynamicProperty(propId) as string;
+        value += chunk;
+      }
+    }
+
+    // convert from ascii back to utf8 if string
+    if (typeof value === "string") {
+      value = decodeURI(value);
     }
 
     return (options?.deserialize ?? this.deserialize)(value, id);
@@ -97,30 +109,50 @@ export class DynamicProperty {
     if (value === undefined) return this.delete(owner, id);
 
     const serialized = (options?.serialize ?? this.serialize)(value, id);
-    if (typeof serialized !== "string")
+    if (!isSerializedValue(serialized))
       throw new Error(
-        `DynamicProperty.serialize must return a string. Recieved type '${typeof serialized}'`
+        `The serializer must return a valid dynamic property value. Received:\n${serialized}.`
       );
 
-    const prevChunkPropIds = this._getChunkPropertyIds(owner, id);
+    const prevChunkPropertyIds = this._getChunkPropertyIds(owner, id);
 
-    // set data in chunks
-    let chunkStart = 0;
-    let chunkId = 0;
-    while (chunkStart < serialized.length) {
-      const chunkEnd = Math.min(
-        serialized.length,
-        chunkStart + this.MAX_CHUNK_SIZE
-      );
-      const chunk = serialized.slice(chunkStart, chunkEnd);
-      this._setChunk(owner, id, chunkId, chunk);
-      chunkStart = chunkEnd;
-      chunkId++;
+    if (typeof serialized === "string") {
+      // size limits on strings so set data in chunks
+      let chunkId = 0;
+      for (const chunk of this._chunkString(serialized)) {
+        this._setChunk(owner, id, chunkId, chunk);
+        chunkId++;
+      }
+
+      // delete non overwritten chunks
+      for (let i = chunkId; i < prevChunkPropertyIds.length; i++) {
+        owner.setDynamicProperty(prevChunkPropertyIds[i], undefined);
+      }
+    } else {
+      // anything else (e.g. other data types) can always fit in a single chunk
+      this._setChunk(owner, id, 0, serialized);
+
+      // delete all chunks apart from first in case it was a string
+      for (let i = 1; i < prevChunkPropertyIds.length; i++) {
+        owner.setDynamicProperty(prevChunkPropertyIds[i], undefined);
+      }
     }
+  }
 
-    // delete left over chunks
-    for (let i = chunkId; i < prevChunkPropIds.length; i++) {
-      this._setChunk(owner, id, i, undefined);
+  static *_chunkString(str: string) {
+    // encodes utf8 to ascii
+    // every character is guaranteed to be a single byte
+    // much faster than calculating byte lengths
+    let encoded = encodeURI(str);
+
+    let chunkStart = 0;
+    while (chunkStart < encoded.length) {
+      const chunkEnd = Math.min(
+        chunkStart + this.MAX_CHUNK_SIZE,
+        encoded.length
+      );
+      yield encoded.slice(chunkStart, chunkEnd);
+      chunkStart = chunkEnd;
     }
   }
 
@@ -128,21 +160,21 @@ export class DynamicProperty {
    * Adjusts the value of a dynamic property.
    * @param owner The owner of the property.
    * @param id The property identifier.
-   * @param adjuster A function that takes the current value and returns a new value.
+   * @param updater A function that takes the current value and returns a new value.
    * @returns Returns the adjusted value.
    * @example
    * ```ts
-   * let newValue = DynamicProperty.adjust(world, "example:increment", (old) => old + 1);
+   * let newValue = DynamicProperty.update(world, "example:increment", (old) => old + 1);
    * ```
    */
-  static adjust<TOld = any, TNew = any>(
+  static update<TOld = any, TNew = any>(
     owner: SupportsDynamicProperties,
     id: string,
-    adjuster: (old: TOld | undefined) => TNew,
+    updater: (old: TOld | undefined) => TNew,
     options?: GetOptions<TOld> & SetOptions<TNew>
   ) {
     const oldValue = this.get(owner, id, options);
-    const newValue = adjuster(oldValue);
+    const newValue = updater(oldValue);
     this.set(owner, id, newValue, options);
     return newValue;
   }
@@ -223,7 +255,7 @@ export class DynamicProperty {
     owner: SupportsDynamicProperties,
     id: string,
     chunkId: number,
-    chunk: string | undefined
+    chunk: SerializedValue | undefined
   ) {
     owner.setDynamicProperty(this._getChunkPropertyId(id, chunkId), chunk);
   }

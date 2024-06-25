@@ -5,14 +5,15 @@ import { regex } from "./regex";
 export type Serializer<T = any> = (value: T, id: string) => SerializedValue;
 export type Deserializer<T = any> = (value: SerializedValue, id: string) => T;
 
-export type IdGetOptions = { namespace?: string };
-export type GetOptions<T> = { deserialize?: Deserializer<T> };
-export type SetOptions<T> = { serialize?: Serializer<T> };
+export type IdOptions = { namespace?: string };
+export type GetOptions<T> = IdOptions & { deserialize?: Deserializer<T> };
+export type SetOptions<T> = IdOptions & { serialize?: Serializer<T> };
 
 export class DynamicProperty {
   static readonly MAX_CHUNK_SIZE = 32767; // dynamic property max size
   static readonly CHUNK_ID_PREFIX = "_";
 
+  static namespace?: string;
   static serialize: Serializer = (value) => JSON.stringify(value);
   static deserialize: Deserializer = (value) => {
     if (typeof value === "string") return JSON.parse(value);
@@ -33,7 +34,8 @@ export class DynamicProperty {
     id: string,
     options?: GetOptions<T>
   ): T | undefined {
-    const propIds = this._getChunkPropertyIds(owner, id);
+    const fullId = this._getNamespacedId(id, options?.namespace);
+    const propIds = this._getChunkPropertyIds(owner, fullId);
     if (propIds.length === 0) return undefined;
 
     let value;
@@ -53,7 +55,7 @@ export class DynamicProperty {
       value = decodeURI(value);
     }
 
-    return (options?.deserialize ?? this.deserialize)(value, id);
+    return (options?.deserialize ?? this.deserialize)(value, fullId);
   }
 
   /**
@@ -69,8 +71,13 @@ export class DynamicProperty {
    * // >> true
    * ```
    */
-  static exists(owner: SupportsDynamicProperties, id: string): boolean {
-    return this._getChunkPropertyIds(owner, id).length !== 0;
+  static exists(
+    owner: SupportsDynamicProperties,
+    id: string,
+    options?: IdOptions
+  ): boolean {
+    const fullId = this._getNamespacedId(id, options?.namespace);
+    return this._getChunkPropertyIds(owner, fullId).length !== 0;
   }
 
   /**
@@ -82,8 +89,13 @@ export class DynamicProperty {
    * DynamicProperty.delete(world, "example:id");
    * ```
    */
-  static delete(owner: SupportsDynamicProperties, id: string) {
-    for (const propId of this._getChunkPropertyIds(owner, id)) {
+  static delete(
+    owner: SupportsDynamicProperties,
+    id: string,
+    options?: IdOptions
+  ) {
+    const fullId = this._getNamespacedId(id, options?.namespace);
+    for (const propId of this._getChunkPropertyIds(owner, fullId)) {
       owner.setDynamicProperty(propId, undefined);
     }
   }
@@ -106,21 +118,22 @@ export class DynamicProperty {
     value: T,
     options?: SetOptions<T>
   ) {
-    if (value === undefined) return this.delete(owner, id);
+    const fullId = this._getNamespacedId(id, options?.namespace);
+    if (value === undefined) return this.delete(owner, id, options);
 
-    const serialized = (options?.serialize ?? this.serialize)(value, id);
+    const serialized = (options?.serialize ?? this.serialize)(value, fullId);
     if (!isSerializedValue(serialized))
       throw new Error(
         `The serializer must return a valid dynamic property value. Received:\n${serialized}.`
       );
 
-    const prevChunkPropertyIds = this._getChunkPropertyIds(owner, id);
+    const prevChunkPropertyIds = this._getChunkPropertyIds(owner, fullId);
 
     if (typeof serialized === "string") {
       // size limits on strings so set data in chunks
       let chunkId = 0;
       for (const chunk of this._chunkString(serialized)) {
-        this._setChunk(owner, id, chunkId, chunk);
+        this._setChunk(owner, fullId, chunkId, chunk);
         chunkId++;
       }
 
@@ -130,7 +143,7 @@ export class DynamicProperty {
       }
     } else {
       // anything else (e.g. other data types) can always fit in a single chunk
-      this._setChunk(owner, id, 0, serialized);
+      this._setChunk(owner, fullId, 0, serialized);
 
       // delete all chunks apart from first in case it was a string
       for (let i = 1; i < prevChunkPropertyIds.length; i++) {
@@ -139,42 +152,38 @@ export class DynamicProperty {
     }
   }
 
-  static *_chunkString(str: string) {
-    // encodes utf8 to ascii
-    // every character is guaranteed to be a single byte
-    // much faster than calculating byte lengths
-    let encoded = encodeURI(str);
-
-    let chunkStart = 0;
-    while (chunkStart < encoded.length) {
-      const chunkEnd = Math.min(
-        chunkStart + this.MAX_CHUNK_SIZE,
-        encoded.length
-      );
-      yield encoded.slice(chunkStart, chunkEnd);
-      chunkStart = chunkEnd;
-    }
+  /**
+   * TODO
+   */
+  static setDefault<T = any>(
+    owner: SupportsDynamicProperties,
+    id: string,
+    value: T,
+    options?: SetOptions<T>
+  ) {
+    if (!this.exists(owner, id, options)) this.set(owner, id, value, options);
   }
 
   /**
    * Adjusts the value of a dynamic property.
    * @param owner The owner of the property.
    * @param id The property identifier.
-   * @param updater A function that takes the current value and returns a new value.
+   * @param adjuster A function that takes the current value and returns a new value.
    * @returns Returns the adjusted value.
    * @example
    * ```ts
-   * let newValue = DynamicProperty.update(world, "example:increment", (old) => old + 1);
+   * // Increment
+   * let newValue = DynamicProperty.adjust(world, "increment", (old) => old + 1);
    * ```
    */
-  static update<TOld = any, TNew = any>(
+  static adjust<TOld = any, TNew = any>(
     owner: SupportsDynamicProperties,
     id: string,
-    updater: (old: TOld | undefined) => TNew,
+    adjuster: (old: TOld | undefined) => TNew,
     options?: GetOptions<TOld> & SetOptions<TNew>
   ) {
     const oldValue = this.get(owner, id, options);
-    const newValue = updater(oldValue);
+    const newValue = adjuster(oldValue);
     this.set(owner, id, newValue, options);
     return newValue;
   }
@@ -192,8 +201,9 @@ export class DynamicProperty {
    */
   static *ids(
     owner: SupportsDynamicProperties,
-    options?: IdGetOptions
+    options?: IdOptions
   ): IterableIterator<string> {
+    const namespace = options?.namespace ?? this.namespace;
     let ids = new Set<string>();
 
     for (const propId of owner.getDynamicPropertyIds()) {
@@ -201,11 +211,7 @@ export class DynamicProperty {
       if (chunkIdPrefixIdx === -1) continue;
 
       const id = propId.slice(0, chunkIdPrefixIdx);
-      if (
-        options?.namespace !== undefined &&
-        !id.startsWith(options?.namespace + ":")
-      )
-        continue;
+      if (namespace !== undefined && !id.startsWith(namespace + ":")) continue;
       if (ids.has(id)) continue;
 
       ids.add(id);
@@ -226,7 +232,7 @@ export class DynamicProperty {
    */
   static *values<T>(
     owner: SupportsDynamicProperties,
-    options?: IdGetOptions & GetOptions<T>
+    options?: IdOptions & GetOptions<T>
   ): IterableIterator<T> {
     for (const id of this.ids(owner, options))
       yield this.get(owner, id, options)!;
@@ -245,11 +251,15 @@ export class DynamicProperty {
    */
   static *entries<T>(
     owner: SupportsDynamicProperties,
-    options?: IdGetOptions & GetOptions<T>
+    options?: IdOptions & GetOptions<T>
   ): IterableIterator<[string, T]> {
     for (const id of this.ids(owner, options))
       yield [id, this.get(owner, id, options)!];
   }
+
+  // ======================================================================================
+  // -- PRIVATE
+  // ======================================================================================
 
   private static _setChunk(
     owner: SupportsDynamicProperties,
@@ -269,8 +279,10 @@ export class DynamicProperty {
       .getDynamicPropertyIds()
       .filter((propId) => isPropertyChunk.test(propId))
       .sort((a, b) => this._getChunkId(a)! - this._getChunkId(b)!);
-    // sorting fixes ids from ordering like this by default:
-    // test_1, test_10, test_2, ...
+    // sorting fixes ids from ordering alphabetically by default:
+    // id_0, id_1, id_10, id_2, ...
+    // instead to be numerically sorted as expected:
+    // id_0, id_1, id_2, ..., id_10, ...
   }
 
   private static _getChunkId(chunkPropertyId: string) {
@@ -285,5 +297,28 @@ export class DynamicProperty {
 
   private static _getChunkPropertyId(propertyId: string, chunkId: number) {
     return `${propertyId}${this.CHUNK_ID_PREFIX}${chunkId}`;
+  }
+
+  private static *_chunkString(str: string) {
+    // encodes utf8 to ascii
+    // every character is guaranteed to be a single byte
+    // much faster than calculating byte lengths
+    // thanks ConMaster :)
+    let encoded = encodeURI(str);
+
+    let chunkStart = 0;
+    while (chunkStart < encoded.length) {
+      const chunkEnd = Math.min(
+        chunkStart + this.MAX_CHUNK_SIZE,
+        encoded.length
+      );
+      yield encoded.slice(chunkStart, chunkEnd);
+      chunkStart = chunkEnd;
+    }
+  }
+
+  private static _getNamespacedId(id: string, namespace = this.namespace) {
+    if (namespace === undefined) return id;
+    return `${namespace}:${id}`;
   }
 }

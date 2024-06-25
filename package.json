@@ -12,12 +12,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
     "prepack": "npm ci && npm run build"
   },
   "devDependencies": {
     "@minecraft/server": "^1.13.0-beta.1.21.10-preview.23",
-    "rimraf": "^5.0.5",
+    "tsup": "^8.1.0",
     "typescript": "^5.3.3"
   }
 }

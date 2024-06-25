@@ -1,0 +1,9 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/tsup/schema.json",
+  "entry": {
+    "better-dynamic-properties": "src/index.ts"
+  },
+  "dts": true,
+  "sourcemap": true,
+  "clean": true
+}

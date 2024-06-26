@@ -1,6 +1,8 @@
 {
   "$schema": "https://cdn.jsdelivr.net/npm/tsup/schema.json",
   "entry": ["src/index.ts"],
+  "external": ["@minecraft/server"],
+  "format": "esm",
   "dts": true,
   "sourcemap": true,
   "clean": true

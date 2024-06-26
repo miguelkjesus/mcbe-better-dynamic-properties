@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Bedrock-OSS/regolith-schemas/main/config/v1.2.json",
+  "author": "CarpalEnderman",
+  "name": "Dynamic Property Testing",
+  "packs": {
+    "behaviorPack": "./test/packs/BP"
+  },
+  "regolith": {
+    "dataPath": "./test/packs/data",
+    "filterDefinitions": {
+      "bundle": {
+        "runWith": "shell",
+        "command": "../../node_modules/.bin/tsup --config=../../test/tsup.config.js"
+      }
+    },
+    "profiles": {
+      "default": {
+        "export": {
+          "readOnly": false,
+          "target": "preview"
+        },
+        "filters": [{ "filter": "bundle" }]
+      }
+    }
+  }
+}

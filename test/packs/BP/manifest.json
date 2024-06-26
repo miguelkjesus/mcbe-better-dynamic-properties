@@ -1,0 +1,26 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Dynamic Property Testing",
+    "description": "My behavior pack description",
+    "uuid": "155d965b-c92c-4aab-84db-e581cdacdf62",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 20, 30]
+  },
+  "modules": [
+    {
+      "description": "Script resources",
+      "language": "javascript",
+      "type": "script",
+      "uuid": "c698228b-8350-4e19-94e4-a6db3561c48c",
+      "version": [1, 0, 0],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.12.0"
+    }
+  ]
+}

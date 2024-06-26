@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "declaration": false,
+    "noLib": false,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "pretty": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "allowUnreachableCode": true,
+    "allowUnusedLabels": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": false,
+    "noImplicitUseStrict": false,
+    "outDir": "lib",
+    "rootDir": ".",
+    "baseUrl": "packs/BP/scripts",
+    "listFiles": false,
+    "noEmitHelpers": true,
+    "skipLibCheck": true
+  },
+  "include": ["packs/BP/scripts/**/*"],
+  "exclude": ["build", "node_modules"],
+  "compileOnSave": false
+}
